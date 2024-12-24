@@ -36,6 +36,7 @@ enabled = true
 INDEX = "https://ggpk-index.onrender.com"
 EXTRACTOR = "https://unoodler.lvlvlvllvlvlvl.workers.dev"
 IMAGES = "https://image.ggpk.exposed"
+BROWSER = "https://www.ggpk.exposed"
 
 # Bind the Workers AI model catalog. Run machine learning models, powered by serverless GPUs, on Cloudflare’s global network
 # Docs: https://developers.cloudflare.com/workers/wrangler/configuration/#workers-ai
