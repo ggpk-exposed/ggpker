@@ -3,4 +3,5 @@
 interface Env {
 	INDEX: string;
 	EXTRACTOR: string;
+	IMAGES: string;
 }

@@ -14,20 +14,31 @@ export interface IndexResponse {
 }
 
 export interface File {
-    path:          string;
-    basename:      string;
-    extension:     null | string;
-    storage:       string;
-    type:          string;
-    mime_type:     null | string;
-    size:          number | null;
-    bundle:        Bundle | null;
-    bundle_offset: number | null;
+    path:           string;
+    dirname:        string;
+    basename:       string;
+    storage:        string;
+    type:           string;
+    extension?:     string;
+    file_size?:     number;
+    bundle?:        Bundle;
+    bundle_offset?: number;
+    sprite?:        Sprite;
+    mime_type?:     string;
 }
 
 export interface Bundle {
     name: string;
     size: number;
+}
+
+export interface Sprite {
+    sheet:  string;
+    source: string;
+    x:      number;
+    y:      number;
+    w:      number;
+    h:      number;
 }
 
 // Converts JSON types to/from your types
@@ -55,6 +66,14 @@ export class Convert {
 
     public static bundleToJson(value: Bundle): any {
         return uncast(value, r("Bundle"));
+    }
+
+    public static toSprite(json: any): Sprite {
+        return cast(json, r("Sprite"));
+    }
+
+    public static spriteToJson(value: Sprite): any {
+        return uncast(value, r("Sprite"));
     }
 }
 
@@ -149,7 +168,7 @@ function transform(val: any, typ: any, getProps: any, key: any = '', parent: any
         });
         Object.getOwnPropertyNames(val).forEach(key => {
             if (!Object.prototype.hasOwnProperty.call(props, key)) {
-                result[key] = transform(val[key], additional, getProps, key, ref);
+                result[key] = val[key];
             }
         });
         return result;
@@ -218,17 +237,27 @@ const typeMap: any = {
     ], false),
     "File": o([
         { json: "path", js: "path", typ: "" },
+        { json: "dirname", js: "dirname", typ: "" },
         { json: "basename", js: "basename", typ: "" },
-        { json: "extension", js: "extension", typ: u(null, "") },
         { json: "storage", js: "storage", typ: "" },
         { json: "type", js: "type", typ: "" },
-        { json: "mime_type", js: "mime_type", typ: u(null, "") },
-        { json: "size", js: "size", typ: u(0, null) },
-        { json: "bundle", js: "bundle", typ: u(r("Bundle"), null) },
-        { json: "bundle_offset", js: "bundle_offset", typ: u(0, null) },
+        { json: "extension", js: "extension", typ: u(undefined, "") },
+        { json: "file_size", js: "file_size", typ: u(undefined, 0) },
+        { json: "bundle", js: "bundle", typ: u(undefined, r("Bundle")) },
+        { json: "bundle_offset", js: "bundle_offset", typ: u(undefined, 0) },
+        { json: "sprite", js: "sprite", typ: u(undefined, r("Sprite")) },
+        { json: "mime_type", js: "mime_type", typ: u(undefined, "") },
     ], false),
     "Bundle": o([
         { json: "name", js: "name", typ: "" },
         { json: "size", js: "size", typ: 0 },
+    ], false),
+    "Sprite": o([
+        { json: "sheet", js: "sheet", typ: "" },
+        { json: "source", js: "source", typ: "" },
+        { json: "x", js: "x", typ: 0 },
+        { json: "y", js: "y", typ: 0 },
+        { json: "w", js: "w", typ: 0 },
+        { json: "h", js: "h", typ: 0 },
     ], false),
 };
