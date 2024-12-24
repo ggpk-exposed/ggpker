@@ -38,6 +38,12 @@ EXTRACTOR = "https://unoodler.lvlvlvllvlvlvl.workers.dev"
 IMAGES = "https://image.ggpk.exposed"
 BROWSER = "https://www.ggpk.exposed"
 
+[env.local.vars]
+INDEX = "http://localhost:3000"
+EXTRACTOR = "http://localhost:8787"
+IMAGES = "http://localhost:8789"
+BROWSER = "http://localhost:5173"
+
 # Bind the Workers AI model catalog. Run machine learning models, powered by serverless GPUs, on Cloudflare’s global network
 # Docs: https://developers.cloudflare.com/workers/wrangler/configuration/#workers-ai
 # [ai]
