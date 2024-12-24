@@ -102,7 +102,9 @@ export async function show_file(extractor: string, file: File, req: Request): Pr
   }
 
   return new Response(result, { headers });
-}export const BLOCK_SIZE = 0x40000;
+}
+
+export const BLOCK_SIZE = 0x40000;
 
 export async function unwrap(r: Response) {
   if (r.ok) {
@@ -113,4 +115,3 @@ export async function unwrap(r: Response) {
     throw msg;
   }
 }
-

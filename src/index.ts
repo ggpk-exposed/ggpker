@@ -26,35 +26,36 @@ export default {
 async function handleRequest(request: Request, env: Env): Promise<Response> {
   const url = new URL(request.url);
   let path = url.pathname;
-  const version = path.split("/")[1];
+  const route = path.split("/")[1];
   let adapter: string;
-  if (!version?.match(/^\d+\./)) {
+  if (["files", "version"].includes(route)) {
     const { hostname, protocol, port } = new URL(env.INDEX);
     url.protocol = protocol;
     url.hostname = hostname;
     url.port = port;
     const response = await fetch(url);
-    if (!response.ok || version !== "files") {
+    if (!response.ok || route !== "files") {
       return new Response(response.body, response);
     } else {
       return processIndexResponse(await response.json(), new URL(request.url), env);
     }
+  } else if (!route?.match(/^\d+\./)) {
+    // Unrecognised route, send them away
+    return Response.redirect(env.BROWSER);
   } else {
-    adapter = version + "/";
+    adapter = route + "/";
     path = path.split(adapter)[1] || "";
-    const upstream = version.startsWith("3") ? "https://patch.poecdn.com/" : "https://patch-poe2.poecdn.com/";
+    const upstream = route.startsWith("3") ? "https://patch.poecdn.com/" : "https://patch-poe2.poecdn.com/";
     adapter = upstream + adapter;
   }
 
   if (request.headers.has("if-modified-since")) {
-    // requests are keyed by version, so it's pretty unlikely for backing data to change
+    // requests are keyed by version, so it's unlikely for backing data to change
     return new Response(null, { status: 304 });
   }
 
-  if (!path) {
-    return Response.redirect(env.BROWSER, 301);
-  } else if (path.endsWith("/")) {
-    return show_dir(path.substring(0, path.length - 1), adapter, version, env);
+  if (!path || path.endsWith("/")) {
+    return show_dir(path.substring(0, path.length - 1), adapter, route, env);
   } else {
     let [file, details] = await file_details(url, env, path, adapter);
     if (!file) {
@@ -62,7 +63,7 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
     }
 
     if (is_dir(file)) {
-      return Response.redirect(url.pathname + "/");
+      return Response.redirect(env.BROWSER + url.pathname);
     }
 
     return show_file(env.EXTRACTOR, file, request);
