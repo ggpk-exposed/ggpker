@@ -28,7 +28,10 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
   let path = url.pathname;
   const route = path.split("/")[1];
   let adapter: string;
-  if (["files", "version"].includes(route)) {
+  if (route === "files" && url.searchParams.get("q") === "preview") {
+    path = url.searchParams.get("path")!;
+    adapter = url.searchParams.get("adapter")!;
+  } else if (["files", "version"].includes(route)) {
     const { hostname, protocol, port } = new URL(env.INDEX);
     url.protocol = protocol;
     url.hostname = hostname;
