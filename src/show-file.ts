@@ -1,6 +1,8 @@
 import { parse_etag } from ".";
 import { File } from "./index-response";
 
+const textDecoder = new TextDecoder("utf-16");
+
 export async function show_file(extractor: string, file: File, req: Request): Promise<Response> {
   if (!file.file_size) {
     console.warn("empty file requested, returning empty response", file);
@@ -101,7 +103,12 @@ export async function show_file(extractor: string, file: File, req: Request): Pr
     console.warn("expected", file.file_size, "bytes, got", i);
   }
 
-  return new Response(result, { headers });
+  if (file.mime_type?.startsWith("text/")) {
+    // This should strip the BOM, if one is present
+    return new Response(textDecoder.decode(result), { headers });
+  } else {
+    return new Response(result, { headers });
+  }
 }
 
 export const BLOCK_SIZE = 0x40000;
