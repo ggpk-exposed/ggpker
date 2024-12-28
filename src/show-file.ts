@@ -48,6 +48,14 @@ export async function show_file(extractor: string, file: File, req: Request): Pr
   }
   const first_block = Math.floor(file.bundle_offset! / BLOCK_SIZE);
   const last_block = Math.floor((file.bundle_offset! + file.file_size! - 1) / BLOCK_SIZE);
+  if (last_block - first_block > 50) {
+    return new Response(
+      `It's too big - would need to fetch ${
+        last_block - first_block
+      } × 400Kb blocks, but we can only fetch 50 due to cloudflare workers' free tier subrequest limit`,
+      { status: 500 }
+    );
+  }
   const blocks: { start: number; end: number; promise: Promise<Response> }[] = [];
   for (let i = 0; i < block_count; i++) {
     const compressed = dataview.getInt32(60 + i * 4, true);
