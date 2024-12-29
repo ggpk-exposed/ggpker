@@ -38,7 +38,7 @@ export async function file_details(url: URL, env: Env, path: string, adapter: st
 const qsConf: IParseBaseOptions = {
   ignoreQueryPrefix: true,
   strictNullHandling: true,
-  decoder: (v, def, cs, t) => (t === "value" && !isNaN(parseInt(v)) ? parseInt(v) : def(v, def, cs)),
+  decoder: (v, def, cs, t) => (t === "value" && /^\d+$/.test(v) ? +v : def(v, def, cs)),
 };
 
 export function processIndexResponse(response: IndexResponse, url: URL, env: Env): Response | PromiseLike<Response> {
