@@ -46,17 +46,11 @@ export async function show_file(extractor: string, file: File, req: Request): Pr
   if (offset !== header_size + 1) {
     console.warn("unexpected header size", offset, "for block count", block_count);
   }
+
   const first_block = Math.floor(file.bundle_offset! / BLOCK_SIZE);
   const last_block = Math.floor((file.bundle_offset! + file.file_size! - 1) / BLOCK_SIZE);
-  if (last_block - first_block > 50) {
-    return new Response(
-      `It's too big - would need to fetch ${
-        last_block - first_block
-      } × 400Kb blocks, but we can only fetch 50 due to cloudflare workers' free tier subrequest limit`,
-      { status: 500 }
-    );
-  }
-  const blocks: Promise<ArrayBuffer>[] = [];
+  type Block = { offset: number; compressed: number; extracted: number; start: number; end: number };
+  const blocks: Block[] = [];
   for (let i = 0; i < block_count; i++) {
     const compressed = dataview.getInt32(60 + i * 4, true);
     if (i > last_block) {
@@ -69,21 +63,41 @@ export async function show_file(extractor: string, file: File, req: Request): Pr
       url.searchParams.set("offset", String(offset));
       url.searchParams.set("compressed", String(compressed));
       url.searchParams.set("extracted", String(extracted));
-      url.searchParams.set("block", i.toString());
 
       const start = i !== first_block ? 0 : file.bundle_offset! % BLOCK_SIZE;
       const end = i !== last_block ? extracted : (file.bundle_offset! + file.file_size!) % BLOCK_SIZE;
-      const init = start === 0 && end === compressed ? undefined : { headers: { range: `bytes=${start}-${end - 1}` } };
 
-      blocks.push(unwrap(fetch(url, init), start, end));
+      blocks.push({ offset, compressed, extracted, start, end });
     }
     offset += compressed;
   }
 
+  // free tier has a subrequest limit of 50; fetch multiple blocks per request if more are needed
+  // https://developers.cloudflare.com/workers/platform/limits/#worker-to-worker-subrequests
+  const n = Math.ceil(blocks.length / 32);
+  const groups = blocks.reduce((l, r, i) => {
+    i % n ? l[l.length - 1].push(r) : l.push([r]);
+    return l;
+  }, [] as Block[][]);
+
+  const responses = groups.map((blocks) => {
+    const url = new URL(extractor);
+    url.searchParams.set("url", cdn_url);
+    url.searchParams.set("offset", blocks.map((b) => b.offset).join());
+    url.searchParams.set("compressed", blocks.map((b) => b.compressed).join());
+    url.searchParams.set("extracted", blocks.map((b) => b.extracted).join());
+    const start = blocks[0].start;
+    let end = blocks[blocks.length - 1].end;
+    const trim_end = end !== blocks[blocks.length - 1].extracted;
+    end += (n - 1) * BLOCK_SIZE;
+    const headers = !start && !trim_end ? undefined : { headers: { range: `bytes=${start}-${end - 1}` } };
+    return unwrap(fetch(url, headers), start, end);
+  });
+
   const result = new Uint8Array(file.file_size!);
   let i = 0;
-  for (let promise of blocks) {
-    let buf = new Uint8Array(await promise);
+  for (let r of responses) {
+    let buf = new Uint8Array(await r);
     result.set(buf, i);
 
     i += buf.length;
