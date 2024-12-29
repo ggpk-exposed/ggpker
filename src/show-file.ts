@@ -56,7 +56,7 @@ export async function show_file(extractor: string, file: File, req: Request): Pr
       { status: 500 }
     );
   }
-  const blocks: { start: number; end: number; promise: Promise<Response> }[] = [];
+  const blocks: Promise<ArrayBuffer>[] = [];
   for (let i = 0; i < block_count; i++) {
     const compressed = dataview.getInt32(60 + i * 4, true);
     if (i > last_block) {
@@ -75,34 +75,15 @@ export async function show_file(extractor: string, file: File, req: Request): Pr
       const end = i !== last_block ? extracted : (file.bundle_offset! + file.file_size!) % BLOCK_SIZE;
       const init = start === 0 && end === compressed ? undefined : { headers: { range: `bytes=${start}-${end - 1}` } };
 
-      blocks.push({ start, end, promise: fetch(url, init) });
+      blocks.push(unwrap(fetch(url, init), start, end));
     }
     offset += compressed;
   }
 
   const result = new Uint8Array(file.file_size!);
   let i = 0;
-  for (let { start, end, promise } of blocks) {
-    const resp = await promise;
-    let buf = new Uint8Array(await unwrap(resp));
-    if (start) {
-      // Check that range header was honored, otherwise we'll need to do it ourself
-      let actual = [0, BLOCK_SIZE];
-      const hval = resp.headers.get("content-range");
-      if (hval) {
-        const match = /bytes (\d+)-(\d+)/.exec(hval);
-        if (match?.length != 4) {
-          throw `failed to parse content-range header '${hval}' - got ${match}`;
-        }
-        actual = match.slice(2, 4).map(parseInt);
-      }
-      if (start !== actual[0]) {
-        buf = buf.slice(start - actual[0]);
-      }
-    }
-    if (end - start !== buf.length) {
-      buf = buf.slice(0, end - start);
-    }
+  for (let promise of blocks) {
+    let buf = new Uint8Array(await promise);
     result.set(buf, i);
 
     i += buf.length;
@@ -121,12 +102,33 @@ export async function show_file(extractor: string, file: File, req: Request): Pr
 
 export const BLOCK_SIZE = 0x40000;
 
-export async function unwrap(r: Response) {
-  if (r.ok) {
-    return await r.arrayBuffer();
+export async function unwrap(promise: Response | Promise<Response>, start: number = 0, end?: number) {
+  const resp = await promise;
+  if (resp.ok) {
+    let buf = await resp.arrayBuffer();
+    if (start) {
+      // Check that range header was honored, otherwise we'll need to do it ourself
+      let actual = [0, BLOCK_SIZE];
+      const hval = resp.headers.get("content-range");
+      if (hval) {
+        const match = /bytes (\d+)-(\d+)/.exec(hval);
+        if (match?.length != 4) {
+          throw `failed to parse content-range header '${hval}' - got ${match}`;
+        }
+        actual = match.slice(2, 4).map(parseInt);
+      }
+      if (start !== actual[0]) {
+        buf = buf.slice(start - actual[0]);
+      }
+    }
+    if (end && end - start !== buf.byteLength) {
+      return buf.slice(0, end - start);
+    } else {
+      return buf;
+    }
   } else {
-    const msg = await r.text();
-    console.warn("extractor error", msg, r);
+    const msg = await resp.text();
+    console.warn("extractor error", msg, resp);
     throw msg;
   }
 }

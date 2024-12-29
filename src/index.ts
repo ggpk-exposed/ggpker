@@ -44,7 +44,7 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
     }
   } else if (!route?.match(/^\d+\./)) {
     // Unrecognised route, send them away
-    return Response.redirect(env.BROWSER);
+    return new Response(null, Response.redirect(env.BROWSER));
   } else {
     adapter = route + "/";
     path = path.split(adapter)[1] || "";
@@ -66,7 +66,7 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
     }
 
     if (is_dir(file)) {
-      return Response.redirect(env.BROWSER + url.pathname);
+      return new Response(null, Response.redirect(env.BROWSER + url.pathname));
     }
 
     return show_file(env.EXTRACTOR, file, request);
