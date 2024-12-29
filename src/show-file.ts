@@ -89,7 +89,7 @@ export async function show_file(extractor: string, file: File, req: Request): Pr
     const start = blocks[0].start;
     let end = blocks[blocks.length - 1].end;
     const trim_end = end !== blocks[blocks.length - 1].extracted;
-    end += (n - 1) * BLOCK_SIZE;
+    end += (blocks.length - 1) * BLOCK_SIZE;
     const headers = !start && !trim_end ? undefined : { headers: { range: `bytes=${start}-${end - 1}` } };
     return unwrap(fetch(url, headers), start, end);
   });
