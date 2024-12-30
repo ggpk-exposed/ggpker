@@ -15,10 +15,7 @@ export async function show_file(extractor: string, file: File, req: Request): Pr
   }
   cdn_url = cdn_url + `Bundles2/${file.bundle!.name}.bundle.bin`;
 
-  const headers: HeadersInit = {};
-  if (file.mime_type) {
-    headers["content-type"] = file.mime_type!;
-  }
+  const headers: HeadersInit = { "content-type": file.mime_type || "application/octet-stream" };
 
   const block_count = Math.ceil(file.bundle!.size / BLOCK_SIZE);
   const header_size = 59 + block_count * 4;
@@ -110,6 +107,17 @@ export async function show_file(extractor: string, file: File, req: Request): Pr
     // This should strip the BOM, if one is present
     return new Response(textDecoder.decode(result), { headers });
   } else {
+    // both the incoming accept-encoding header and the actual encoding of the outgoing file are modified by cloudflare.
+    // just need to add the incoming header to our output headers to enable cf to compress the data
+    // https://community.cloudflare.com/t/worker-doesnt-return-gzip-brotli-compressed-data/337644/3
+    const encoding = req.headers
+      .get("accept-encoding")
+      ?.split(",")
+      ?.find((v) => v)
+      ?.trim();
+    if (encoding) {
+      headers["content-encoding"] = encoding;
+    }
     return new Response(result, { headers });
   }
 }
