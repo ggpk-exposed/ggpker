@@ -16,7 +16,7 @@ export async function show_file(extractor: string, file: File, req: Request): Pr
   cdn_url = cdn_url + `Bundles2/${file.bundle!.name}.bundle.bin`;
 
   const headers: HeadersInit = {};
-  if ("mime_type" in file) {
+  if (file.mime_type) {
     headers["content-type"] = file.mime_type!;
   }
 
