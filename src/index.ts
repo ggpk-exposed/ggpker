@@ -2,9 +2,11 @@ import { show_dir } from "./show-dir";
 import { show_file } from "./show-file";
 import { file_details, is_dir, processIndexResponse } from "./utils";
 
+let storages: { storages: string[] } | null = null;
+
 export default {
   async scheduled(_, env) {
-    await fetch(env.INDEX + "/files?q=ready");
+    storages = await fetch(env.INDEX + "/files?q=ready").then((res) => res.json());
   },
   async fetch(request, env) {
     try {
@@ -42,15 +44,25 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
     } else {
       return processIndexResponse(await response.json(), new URL(request.url), env);
     }
-  } else if (!route?.match(/^\d+\./)) {
-    // Unrecognised route, send them away
-    return new Response(null, Response.redirect(env.BROWSER));
-  } else {
+  } else if (route === "poe1") {
+		path = path.split("poe1/")[1];
+		adapter = (storages! || (await fetch(env.INDEX + "/files?q=ready").then((res) => res.json()))).storages.find((s) =>
+			s.includes("patch.poecdn.com"),
+		)!;
+	} else if (route === "poe2") {
+		path = path.split("poe2/")[1];
+		adapter = (storages! || (await fetch(env.INDEX + "/files?q=ready").then((res) => res.json()))).storages.find((s) =>
+			s.includes("patch-poe2.poecdn.com"),
+		)!;
+	} else if (route?.match(/^\d+\./)) {
     adapter = route + "/";
     path = path.split(adapter)[1] || "";
     const upstream = route.startsWith("3") ? "https://patch.poecdn.com/" : "https://patch-poe2.poecdn.com/";
     adapter = upstream + adapter;
-  }
+  } else {
+		// Unrecognised route, send them away
+		return new Response(null, Response.redirect(env.BROWSER));
+	}
 
   if (request.headers.has("if-modified-since")) {
     // requests are keyed by version, so it's unlikely for backing data to change
