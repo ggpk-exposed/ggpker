@@ -55,6 +55,10 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
 			s.includes("patch-poe2.poecdn.com"),
 		)!;
 	} else if (route?.match(/^\d+\./)) {
+		if (request.headers.has("if-modified-since")) {
+			// requests are keyed by version, so it's unlikely for backing data to change
+			return new Response(null, { status: 304 });
+		}
     adapter = route + "/";
     path = path.split(adapter)[1] || "";
     const upstream = route.startsWith("3") ? "https://patch.poecdn.com/" : "https://patch-poe2.poecdn.com/";
@@ -63,11 +67,6 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
 		// Unrecognised route, send them away
 		return new Response(null, Response.redirect(env.BROWSER));
 	}
-
-  if (request.headers.has("if-modified-since")) {
-    // requests are keyed by version, so it's unlikely for backing data to change
-    return new Response(null, { status: 304 });
-  }
 
   if (!path || path.endsWith("/")) {
     return show_dir(path.substring(0, path.length - 1), adapter, route, env);
