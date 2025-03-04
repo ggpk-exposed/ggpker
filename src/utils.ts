@@ -51,7 +51,8 @@ export function processIndexResponse(response: IndexResponse, url: URL, env: Env
 
   for (let f of response.files || []) {
     if (f.sprite) {
-      (f as any).url = `${env.IMAGES}/${version}/${f.sprite.sheet}?format=png&${qs.stringify(crop(f.sprite))}`;
+			f.mime_type = "image/png";
+      (f as any).url = `${env.IMAGES}/${version}/${f.sprite.sheet}?format=png&${qs.stringify(f)}&${qs.stringify(crop(f.sprite))}`;
     } else if (f.basename.endsWith(".dds")) {
       f.mime_type = "image/png";
       (f as any).url = `${env.IMAGES}/${version}/${f.path}?format=png&${qs.stringify(f)}`;
