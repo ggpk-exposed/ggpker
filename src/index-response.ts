@@ -8,7 +8,7 @@
 // match the expected interface, even if the JSON is valid.
 
 export interface IndexResponse {
-    storages: string[];
+    storages: readonly string[];
     adapter:  string;
     files:    File[];
 }

@@ -1,13 +1,8 @@
-import { show_dir } from "./show-dir";
 import { show_file } from "./show-file";
-import { file_details, is_dir, processIndexResponse } from "./utils";
-
-let storages: { storages: string[] } | null = null;
+import { file_details, processIndexResponse } from "./utils";
+import { current_version, get_db, guess_db, is_db, ls, Storage, storages } from "./db";
 
 export default {
-  async scheduled(_, env) {
-    storages = await fetch(env.INDEX + "/files?q=ready").then((res) => res.json());
-  },
   async fetch(request, env) {
     try {
       const response = await handleRequest(request, env);
@@ -25,62 +20,46 @@ export default {
   },
 } satisfies ExportedHandler<Env>;
 
+function normalizePath(path?: string | null) {
+  if (!path) return "";
+  return path.toLowerCase().replace(/^\/+/g, "").replace(/\/+$/g, "");
+}
+
 async function handleRequest(request: Request, env: Env): Promise<Response> {
   const url = new URL(request.url);
   let path = url.pathname;
   const route = path.split("/")[1];
-  let adapter: string;
-  if (route === "files" && url.searchParams.get("q") === "preview") {
-    path = url.searchParams.get("path")!;
-    adapter = url.searchParams.get("adapter")!;
-  } else if (["files", "version"].includes(route)) {
-    const { hostname, protocol, port } = new URL(env.INDEX);
-    url.protocol = protocol;
-    url.hostname = hostname;
-    url.port = port;
-    const response = await fetch(url);
-    if (!response.ok || route !== "files") {
-      return new Response(response.body, response);
-    } else {
-      return processIndexResponse(await response.json(), new URL(request.url), env);
+  let adapter: Storage;
+  if (route === "files") {
+    path = normalizePath(url.searchParams.get("path"));
+    adapter = guess_db(url.searchParams.get("adapter"));
+
+    if (url.searchParams.get("q") !== "preview") {
+      const files = await ls(path, adapter, env);
+      return processIndexResponse({ storages, adapter, files }, new URL(request.url), env);
     }
-  } else if (route === "poe1") {
-		path = path.split("poe1/")[1];
-		adapter = (storages! || (await fetch(env.INDEX + "/files?q=ready").then((res) => res.json()))).storages.find((s) =>
-			s.includes("patch.poecdn.com"),
-		)!;
-	} else if (route === "poe2") {
-		path = path.split("poe2/")[1];
-		adapter = (storages! || (await fetch(env.INDEX + "/files?q=ready").then((res) => res.json()))).storages.find((s) =>
-			s.includes("patch-poe2.poecdn.com"),
-		)!;
-	} else if (route?.match(/^\d+\./)) {
-		if (request.headers.has("if-modified-since")) {
-			// requests are keyed by version, so it's unlikely for backing data to change
-			return new Response(null, { status: 304 });
-		}
-    adapter = route + "/";
-    path = path.split(adapter)[1] || "";
-    const upstream = route.startsWith("3") ? "https://patch.poecdn.com/" : "https://patch-poe2.poecdn.com/";
-    adapter = upstream + adapter;
+  } else if (route === "version") {
+    const db = get_db(url.searchParams.get("poe"), env);
+    return new Response(await current_version(db));
+  } else if (is_db(route)) {
+    adapter = route;
+    path = path.split(adapter + "/")[1] || "";
   } else {
-		// Unrecognised route, send them away
-		return new Response(null, Response.redirect(env.BROWSER));
-	}
+    console.log("unrecognised route", route);
+    return new Response(null, Response.redirect(env.BROWSER));
+  }
 
-  if (!path || path.endsWith("/")) {
-    return show_dir(path.substring(0, path.length - 1), adapter, route, env);
-  } else {
-    let [file, details] = await file_details(url, env, path, adapter);
-    if (!file) {
-      return Response.json(details, { status: 404 });
-    }
+  if (request.headers.has("if-modified-since")) {
+    // requests are keyed by version, so it's unlikely for backing data to change
+    return new Response(null, { status: 304 });
+  }
 
-    if (is_dir(file)) {
-      return new Response(null, Response.redirect(env.BROWSER + url.pathname));
-    }
-
+  let file = await file_details(url, env, path, adapter);
+  if (file) {
     return show_file(env.EXTRACTOR, file, request);
+  } else {
+    console.log("file not found", path);
+    return new Response(null, Response.redirect(env.BROWSER + url.pathname));
   }
 }
 
