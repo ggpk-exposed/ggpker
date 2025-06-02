@@ -9,7 +9,7 @@ export function is_db(name: string): name is Storage {
 }
 
 export function guess_db(name?: string | null): Storage {
-  if (!name) return "poe1";
+  if (!name) return "poe2";
   if (is_db(name)) return name;
   return name.startsWith("3") || name.includes("/3.") ? "poe1" : "poe2";
 }

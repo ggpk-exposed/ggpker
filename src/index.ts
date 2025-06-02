@@ -39,7 +39,7 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
       return processIndexResponse({ storages, adapter, files }, new URL(request.url), env);
     }
   } else if (route === "version") {
-    const db = get_db(url.searchParams.get("poe"), env);
+    const db = get_db("poe" + url.searchParams.get("poe"), env);
     return new Response(await current_version(db));
   } else if (is_db(route)) {
     adapter = route;
