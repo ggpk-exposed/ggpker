@@ -43,7 +43,7 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
     return new Response(await current_version(db));
   } else if (is_db(route)) {
     adapter = route;
-    path = path.split(adapter + "/")[1] || "";
+    path = normalizePath(path.split(adapter + "/")[1] || "");
   } else {
     console.log("unrecognised route", route);
     return new Response(null, Response.redirect(env.BROWSER));
