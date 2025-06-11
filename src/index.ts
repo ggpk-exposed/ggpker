@@ -54,7 +54,7 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
     return new Response(null, { status: 304 });
   }
 
-  let file = await file_details(url, env, path, adapter);
+  let file = await file_details(env, path, adapter);
   if (file) {
     return show_file(env.EXTRACTOR, file, request);
   } else {
