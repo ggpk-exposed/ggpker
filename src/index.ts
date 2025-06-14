@@ -1,8 +1,33 @@
 import { show_file } from "./show-file";
 import { file_details, processIndexResponse } from "./utils";
 import { current_version, get_db, guess_db, is_db, ls, Storage, storages } from "./db";
+import { connect } from "cloudflare:sockets";
 
 export default {
+  async scheduled() {
+    try {
+      const socket = connect("patch.pathofexile.com:12995");
+
+      const writer = socket.writable.getWriter();
+      await writer.write(new Uint8Array([1, 7]));
+      writer.releaseLock();
+
+      const reader = socket.readable.getReader();
+      const { value } = await reader.read();
+      const len = value[34];
+      if (value.length < 35 + len * 2) {
+        console.error("you need to read more bytes", len, value.length);
+      }
+      const bytes = value.slice(35, 35 + len * 2);
+      const url = new TextDecoder("utf-16le").decode(bytes);
+      console.log(url);
+      reader.releaseLock();
+      await socket.close();
+    } catch (error) {
+      console.error("Error in scheduled task", error);
+    }
+  },
+
   async fetch(request, env) {
     try {
       const response = await handleRequest(request, env);
