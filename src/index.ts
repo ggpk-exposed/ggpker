@@ -1,12 +1,14 @@
 import { show_file } from "./show-file";
 import { file_details, processIndexResponse } from "./utils";
-import { current_version, get_db, guess_db, is_db, ls, Storage, storages } from "./db";
+import { current_version, get_db, guess_db, is_db, ls, Storage, storages, update_version } from "./db";
 import { check_version } from "./check-version";
 
 export default {
-  async scheduled(_c, _e, ctx) {
-    ctx.waitUntil(check_version("patch.pathofexile.com", 12995));
-    ctx.waitUntil(check_version("patch.pathofexile2.com", 13060));
+  async scheduled(_c, env, ctx) {
+    const db1 = get_db("poe1", env);
+    ctx.waitUntil(check_version("patch.pathofexile.com", 12995, current_version(db1), (url) => update_version(db1, url)));
+    const db2 = get_db("poe2", env);
+    ctx.waitUntil(check_version("patch.pathofexile2.com", 13060, current_version(db2), (url) => update_version(db2, url)));
   },
 
   async fetch(request, env) {

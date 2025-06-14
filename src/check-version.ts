@@ -1,6 +1,6 @@
 import { connect } from "cloudflare:sockets";
 
-export async function check_version(hostname: string , port: number ) {
+export async function check_version(hostname: string, port: number, current: Promise<string>, cb: (url: string) => Promise<void>) {
   try {
     const socket = connect({ hostname, port });
 
@@ -16,7 +16,10 @@ export async function check_version(hostname: string , port: number ) {
     }
     const bytes = value.slice(35, 35 + len * 2);
     const url = new TextDecoder("utf-16le").decode(bytes);
-    console.log("got url", url);
+    if (url !== (await current)) {
+      console.log("updating version to", url);
+      await cb(url);
+    }
     await socket.close();
   } catch (error) {
     console.error("Error in scheduled task", error);

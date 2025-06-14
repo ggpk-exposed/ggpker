@@ -29,6 +29,17 @@ export async function current_version(db: D1Database) {
   return row!.url as string;
 }
 
+export async function update_version(db: D1Database, url: string) {
+  await db
+    .prepare(
+      `update version
+              set url = ?
+              where id = 0`,
+    )
+    .bind(url)
+    .run();
+}
+
 export async function ls(path: string, adapter: Storage, env: Env) {
   const db = get_db(adapter, env);
   const file_storage = current_version(db);
