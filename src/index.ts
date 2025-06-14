@@ -6,21 +6,25 @@ import { connect } from "cloudflare:sockets";
 export default {
   async scheduled() {
     try {
-      const socket = connect("patch.pathofexile.com:12995");
+      console.log("opening socket");
+      const socket = connect({ hostname: "patch.pathofexile.com", port: 12995 });
 
+      console.log("sending command");
       const writer = socket.writable.getWriter();
       await writer.write(new Uint8Array([1, 7]));
       writer.releaseLock();
+      console.log("sent 1,7");
 
       const reader = socket.readable.getReader();
       const { value } = await reader.read();
+      console.log("got", value.length, "bytes");
       const len = value[34];
       if (value.length < 35 + len * 2) {
         console.error("you need to read more bytes", len, value.length);
       }
       const bytes = value.slice(35, 35 + len * 2);
       const url = new TextDecoder("utf-16le").decode(bytes);
-      console.log(url);
+      console.log("got url", url);
       reader.releaseLock();
       await socket.close();
     } catch (error) {
