@@ -1,39 +1,12 @@
 import { show_file } from "./show-file";
 import { file_details, processIndexResponse } from "./utils";
 import { current_version, get_db, guess_db, is_db, ls, Storage, storages } from "./db";
-import { connect } from "cloudflare:sockets";
-
-async function checkVersion() {
-  try {
-    console.log("opening socket");
-    const socket = connect({ hostname: "patch.pathofexile.com", port: 12995 });
-
-    console.log("sending command");
-    const writer = socket.writable.getWriter();
-    await writer.write(new Uint8Array([1, 7]));
-    writer.releaseLock();
-    console.log("sent 1,7");
-
-    const reader = socket.readable.getReader();
-    const { value } = await reader.read();
-    console.log("got", value.length, "bytes");
-    const len = value[34];
-    if (value.length < 35 + len * 2) {
-      console.error("you need to read more bytes", len, value.length);
-    }
-    const bytes = value.slice(35, 35 + len * 2);
-    const url = new TextDecoder("utf-16le").decode(bytes);
-    console.log("got url", url);
-    reader.releaseLock();
-    await socket.close();
-  } catch (error) {
-    console.error("Error in scheduled task", error);
-  }
-}
+import { check_version } from "./check-version";
 
 export default {
   async scheduled(_c, _e, ctx) {
-    ctx.waitUntil(checkVersion());
+    ctx.waitUntil(check_version("patch.pathofexile.com", 12995));
+    ctx.waitUntil(check_version("patch.pathofexile2.com", 13060));
   },
 
   async fetch(request, env) {
