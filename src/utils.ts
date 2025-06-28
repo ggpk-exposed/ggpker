@@ -1,10 +1,11 @@
 import qs from "qs";
 import { File, IndexResponse, Sprite } from "./index-response";
 import { Mime } from "mime";
+import standardTypes from "mime/types/standard.js";
+import otherTypes from "mime/types/other.js";
 import { current_version, get_db, mapFile, stat, Storage } from "./db";
 
-export const mime = new Mime();
-mime.define({
+export const mime = new Mime(standardTypes, otherTypes, {
   "text/plain": [
     "act",
     "amd",
