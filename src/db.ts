@@ -75,11 +75,15 @@ export async function search_files(adapter: Storage, env: Env, filter: string, p
   const { results } = await (path
     ? db
         .prepare(
-          `select f.*, b.name as bundle_name, b.size as bundle_size
-       from files as f
-              join bundles as b on b.id = f.bundle
-       where f.name like ? and f.dir in (select id from dirs where name like ?)
-       order by f.name`,
+          `select f.*,
+                  b.name as bundle_name,
+                  b.size as bundle_size,
+                  (select dirs.name from dirs where dirs.id = f.dir) as dir_name
+           from files as f
+                  join bundles as b on b.id = f.bundle
+           where f.name like ?
+             and f.dir in (select id from dirs where name like ?)
+           order by f.name`,
         )
         .bind("%" + filter.toLowerCase() + "%", path + "%")
         .all()
@@ -147,6 +151,9 @@ export function mapFiles(rows: Record<string, any>[], dirname: string, storage: 
 export function mapFile(row: Record<string, any>, dirname: string, storage: string): File {
   const extension = row.name.includes(".") ? row.name.split(".").pop() : undefined;
   const mime_type = mime.getType(row.name) || undefined;
+  if ("dir_name" in row) {
+    dirname = row.dir_name;
+  }
   const path = dirname ? dirname + "/" + row.name : row.name;
   return {
     path,
