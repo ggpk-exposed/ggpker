@@ -18,9 +18,9 @@ export async function show_file(extractor: string, file: File, req: Request): Pr
   const headers: HeadersInit = { "content-type": file.mime_type || "application/octet-stream" };
 
   const block_count = Math.ceil(file.bundle!.size / BLOCK_SIZE);
-  const header_size = 59 + block_count * 4;
+  const header_size = 60 + block_count * 4;
 
-  const resp = await fetch(cdn_url, { headers: { range: "bytes=0-" + header_size }, cf: { cacheEverything: true } });
+  const resp = await fetch(cdn_url, { headers: { range: "bytes=0-" + (header_size - 1) }, cf: { cacheEverything: true } });
   if (req.headers.has("if-none-match") && resp.headers.has("etag")) {
     const matches = parse_etag(req.headers.get("if-none-match")!);
     if (parse_etag(resp.headers.get("etag")!).find((match) => matches.includes(match))) {
@@ -33,7 +33,7 @@ export async function show_file(extractor: string, file: File, req: Request): Pr
     }
   }
 
-  const dataview = new DataView(await unwrap(resp));
+  const dataview = new DataView(await unwrap(resp, 0, header_size, cdn_url));
 
   const bundle_size = dataview.getInt32(0, true);
   if (bundle_size !== file.bundle!.size) {
@@ -88,7 +88,7 @@ export async function show_file(extractor: string, file: File, req: Request): Pr
     const trim_end = end !== blocks[blocks.length - 1].extracted;
     end += (blocks.length - 1) * BLOCK_SIZE;
     const headers = !start && !trim_end ? undefined : { range: `bytes=${start}-${end - 1}` };
-    return unwrap(fetch(url, { headers, cf: { cacheEverything: true } }), start, end);
+    return unwrap(fetch(url, { headers, cf: { cacheEverything: true } }), start, end, url);
   });
 
   const result = new Uint8Array(file.file_size!);
@@ -125,7 +125,7 @@ export async function show_file(extractor: string, file: File, req: Request): Pr
 
 export const BLOCK_SIZE = 0x40000;
 
-export async function unwrap(promise: Response | Promise<Response>, start: number = 0, end?: number) {
+export async function unwrap(promise: Response | Promise<Response>, start: number = 0, end?: number, context?: any) {
   const resp = await promise;
   if (resp.ok) {
     let buf = await resp.arrayBuffer();
@@ -151,7 +151,7 @@ export async function unwrap(promise: Response | Promise<Response>, start: numbe
     }
   } else {
     const msg = await resp.text();
-    console.warn("extractor error", msg, resp);
+    console.warn("extractor error", msg, context);
     throw msg;
   }
 }
