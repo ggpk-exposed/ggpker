@@ -1,6 +1,6 @@
 import { show_file } from "./show-file";
 import { file_details, processIndexResponse } from "./utils";
-import { current_version, get_db, guess_db, is_db, ls, Storage, storages } from "./db";
+import { current_version, get_db, guess_db, is_db, ls, search_files, Storage, storages } from "./db";
 
 export default {
   async fetch(request, env) {
@@ -34,7 +34,13 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
     path = normalizePath(url.searchParams.get("path"));
     adapter = guess_db(url.searchParams.get("adapter"));
 
-    if (url.searchParams.get("q") !== "preview") {
+    const operation = url.searchParams.get("q");
+    if (operation === "preview") {
+      // go to show_file below
+    } else if (operation === "search") {
+      const files = await search_files(adapter, env, url.searchParams.get("filter") || "", path);
+      return processIndexResponse({ storages, adapter, files }, new URL(request.url), env);
+    } else {
       const files = await ls(path, adapter, env);
       return processIndexResponse({ storages, adapter, files }, new URL(request.url), env);
     }

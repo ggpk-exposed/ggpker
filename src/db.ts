@@ -69,6 +69,34 @@ export async function ls_files(db: D1Database, path?: string) {
   return results;
 }
 
+export async function search_files(adapter: Storage, env: Env, filter: string, path: string) {
+  const db = get_db(adapter, env);
+
+  const { results } = await (path
+    ? db
+        .prepare(
+          `select f.*, b.name as bundle_name, b.size as bundle_size
+       from files as f
+              join bundles as b on b.id = f.bundle
+       where f.name like ? and f.dir in (select id from dirs where name like ?)
+       order by f.name`,
+        )
+        .bind("%" + filter.toLowerCase() + "%", path + "%")
+        .all()
+    : db
+        .prepare(
+          `select f.*, b.name as bundle_name, b.size as bundle_size
+       from files as f
+              join bundles as b on b.id = f.bundle
+       where f.name like ?
+       order by f.name`,
+        )
+        .bind("%" + filter.toLowerCase() + "%")
+        .all());
+
+  return mapFiles(results, path, await current_version(db));
+}
+
 async function root_files(db: D1Database) {
   const { results } = await db
     .prepare(
