@@ -1,6 +1,6 @@
 import { show_file } from "./show-file";
 import { file_details, processIndexResponse } from "./utils";
-import { current_version, get_db, guess_db, is_db, ls, search_files, Storage, storages } from "./db";
+import { current_version, guess_db, is_db, ls, search_files, Storage, storages } from "./db";
 import { check_version } from "./check-version";
 
 export default {
@@ -46,8 +46,9 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
       return processIndexResponse({ storages, adapter, files }, new URL(request.url), env);
     }
   } else if (route === "version") {
-    const db = get_db("poe" + url.searchParams.get("poe"), env);
-    return new Response(await current_version(db));
+    const poe = url.searchParams.get("poe");
+    const adapter = guess_db(poe === "1" ? "poe1" : "poe2");
+    return new Response(await current_version(adapter, env));
   } else if (route === "version2") {
     const poe1 = url.searchParams.get("poe") === "1";
     const addr: [string, number] = poe1 ? ["patch.pathofexile.com", 12995] : ["patch.pathofexile2.com", 13060];

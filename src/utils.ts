@@ -3,7 +3,7 @@ import { File, IndexResponse, Sprite } from "./index-response";
 import { Mime } from "mime";
 import standardTypes from "mime/types/standard.js";
 import otherTypes from "mime/types/other.js";
-import { current_version, get_db, mapFile, stat, Storage } from "./db";
+import { current_version, stat, Storage } from "./db";
 
 export const mime = new Mime(standardTypes, otherTypes);
 mime.define(
@@ -71,8 +71,7 @@ export function crop({ x, y, w, h }: Sprite): any {
 }
 
 export async function file_details(env: Env, path: string, adapter: Storage): Promise<File | undefined> {
-  const found = await stat(path, adapter, env);
-  if (found) return mapFile(found, split_path(path)[0], await current_version(get_db(adapter, env)));
+  return await stat(path, adapter, env);
 }
 
 export function processIndexResponse(response: IndexResponse, url: URL, env: Env): Response | PromiseLike<Response> {
