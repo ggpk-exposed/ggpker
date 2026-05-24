@@ -1,12 +1,11 @@
 import { show_file } from "./show-file";
 import { file_details, processIndexResponse } from "./utils";
 import { current_version, guess_db, is_db, ls, search_files, Storage, storages } from "./db";
-import { check_version } from "./check-version";
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     try {
-      const response = await handleRequest(request, env);
+      const response = await handleRequest(request, env, ctx);
       Object.entries({
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "*",
@@ -26,7 +25,7 @@ function normalizePath(path?: string | null) {
   return path.toLowerCase().replace(/^\/+/g, "").replace(/\/+$/g, "");
 }
 
-async function handleRequest(request: Request, env: Env): Promise<Response> {
+async function handleRequest(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
   const url = new URL(request.url);
   let path = url.pathname;
   const route = path.split("/")[1];
@@ -45,14 +44,27 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
       const files = await ls(path, adapter, env);
       return processIndexResponse({ storages, adapter, files }, new URL(request.url), env);
     }
-  } else if (route === "version") {
+  } else if (route === "version" && !url.searchParams.has("live")) {
     const poe = url.searchParams.get("poe");
     const adapter = guess_db(poe === "1" ? "poe1" : "poe2");
     return new Response(await current_version(adapter, env));
-  } else if (route === "version2") {
-    const poe1 = url.searchParams.get("poe") === "1";
-    const addr: [string, number] = poe1 ? ["patch.pathofexile.com", 12995] : ["patch.pathofexile2.com", 13060];
-    return new Response(await check_version(...addr));
+  } else if (route === "version") {
+    const poe = url.searchParams.get("poe");
+    const cache = caches.default;
+    const cacheKey = new Request(url.toString(), request);
+    let response = await cache.match(cacheKey);
+    if (!response) {
+      const indexUrl = env.INDEX + "/check-version?poe=" + poe;
+      const res = await (env.INDEX_SERVICE ? env.INDEX_SERVICE.fetch(indexUrl) : fetch(indexUrl));
+      const version = await res.text();
+      response = new Response(version, {
+        headers: {
+          "Cache-Control": "public, max-age=60",
+        }
+      });
+      ctx.waitUntil(cache.put(cacheKey, response.clone()));
+    }
+    return response;
   } else if (is_db(route)) {
     adapter = route;
     path = normalizePath(path.split(adapter + "/")[1] || "");
