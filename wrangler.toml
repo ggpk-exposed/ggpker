@@ -18,9 +18,7 @@ enabled = true
 
 [vars]
 BROWSER = "https://www.ggpk.exposed"
-
-[env.dev.vars]
-BROWSER = "http://localhost:5173"
+IMAGES = "https://i.ggpk.exposed"
 
 [[services]]
 binding = "EXTRACTOR"
