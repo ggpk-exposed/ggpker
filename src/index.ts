@@ -87,7 +87,7 @@ async function handleRequest(request: Request, env: Env, ctx: ExecutionContext):
 	const [adapter, path] = normalizePath(url.pathname);
 	let file = await file_details(env, path, adapter);
 	if (file) {
-		return show_file(env.EXTRACTOR, file, request);
+		return show_file(env, file, request);
 	} else {
 		console.log("file not found", path);
 		return new Response(null, Response.redirect(env.BROWSER + url.pathname));
