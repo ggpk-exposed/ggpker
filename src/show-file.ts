@@ -15,7 +15,10 @@ export async function show_file(extractor: Fetcher, file: File, req: Request): P
   }
   cdn_url = cdn_url + `Bundles2/${file.bundle!.name}.bundle.bin`;
 
-  const headers: HeadersInit = { "content-type": file.mime_type || "application/octet-stream" };
+  const headers: HeadersInit = {
+    "content-type": file.mime_type || "application/octet-stream",
+    "content-disposition": `attachment; filename="${file.basename.replace(/"/g, '\\"')}"; filename*=UTF-8''${encodeURIComponent(file.basename)}`
+  };
 
   const block_count = Math.ceil(file.bundle!.size / BLOCK_SIZE);
   const header_size = 60 + block_count * 4;

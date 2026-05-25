@@ -36,7 +36,7 @@ async function handleRequest(request: Request, env: Env, ctx: ExecutionContext):
 		adapter = guess_db(url.searchParams.get("adapter"));
 		console.log("operation:", operation, "path:", path);
 
-		if (operation === "preview") {
+		if (operation === "preview" || operation === "download") {
 			// go to show_file below
 		} else if (operation === "search") {
 			console.log("searching for files with filter:", url.searchParams.get("filter"), "in path:", path);
