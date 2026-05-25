@@ -77,18 +77,13 @@ export async function file_details(env: Env, path: string, adapter: string): Pro
 export function processIndexResponse(response: IndexResponse, url: URL, env: Env): Response | PromiseLike<Response> {
   (response as any).dirname = url.searchParams.get("path") || "";
 
-  const version = response.adapter
-    .split("/")
-    .reverse()
-    .find((v) => v);
-
   for (let f of response.files || []) {
     if (f.sprite) {
       f.mime_type = "image/png";
-      (f as any).previewUrl = new URL(`/${version}/${f.sprite.sheet}?format=png&${qs.stringify(crop(f.sprite))}`, env.IMAGES).toString();
+      (f as any).previewUrl = new URL(`/${f.storage}/${f.sprite.sheet}?format=png&${qs.stringify(crop(f.sprite))}`, env.IMAGES).toString();
     } else if (f.basename.endsWith(".dds")) {
       f.mime_type = "image/png";
-      (f as any).previewUrl = new URL(`/${version}/${f.path}?format=png`, env.IMAGES).toString();
+      (f as any).previewUrl = new URL(`/${f.storage}/${f.path}?format=png`, env.IMAGES).toString();
     }
 	f.path = `${f.storage}://${f.path}`
   }
