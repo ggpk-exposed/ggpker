@@ -61,7 +61,7 @@ async function handleRequest(request: Request, env: Env, ctx: ExecutionContext):
 		if (operation === "preview" || operation === "download") {
 			return preview(url.searchParams.get("path")!, env, request)
 		} else if (operation === "search") {
-			const files = await search_files(adapter, env, url.searchParams.get("filter") || "", path, url.searchParams.get("deep") || "");
+			const files = await search_files(adapter, env, url.searchParams.get("filter") || "", path, url.searchParams.get("deep") || "", url.searchParams.get("size") || "");
 			return processIndexResponse({storages, adapter, files}, new URL(request.url), env);
 		} else {
 			const files = await ls(path, adapter, env);

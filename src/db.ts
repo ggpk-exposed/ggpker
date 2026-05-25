@@ -37,8 +37,8 @@ export async function stat(path: string, adapter: string, env: Env) {
   return mapNode(data.files[0], adapter);
 }
 
-export async function search_files(adapter: string, env: Env, filter: string, path: string, deep: string = "") {
-  const url = "http://index/files?q=search&filter=" + encodeURIComponent(filter) + "&path=" + encodeURIComponent(path) + "&adapter=" + encodeURIComponent(adapter) + "&deep=" + encodeURIComponent(deep);
+export async function search_files(adapter: string, env: Env, filter: string, path: string, deep: string = "", size: string = "") {
+  const url = "http://index/files?q=search&filter=" + encodeURIComponent(filter) + "&path=" + encodeURIComponent(path) + "&adapter=" + encodeURIComponent(adapter) + "&deep=" + encodeURIComponent(deep) + "&size=" + encodeURIComponent(size);
   const data: any = await fetch_index(url, env);
   return mapNodes(data.files, adapter);
 }
