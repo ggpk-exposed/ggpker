@@ -92,7 +92,7 @@ export async function show_file(env: Env, file: File, req: Request): Promise<Res
 		const trim_end = end !== blocks[blocks.length - 1].extracted;
 		end += (blocks.length - 1) * BLOCK_SIZE;
 		const headers = !start && !trim_end ? undefined : {range: `bytes=${start}-${end - 1}`};
-		return unwrap(env.EXTRACTOR.fetch(url.toString(), {headers, cf: {cacheEverything: true}}), start, end, url);
+		return unwrap(env.EXTRACTOR!.fetch(url.toString(), {headers, cf: {cacheEverything: true}}), start, end, url);
 	});
 
 	const result = new Uint8Array(file.file_size!);

@@ -1,5 +1,4 @@
-import { mime, split_path } from "./utils";
-import { File } from "./index-response";
+import {File} from "./index-response";
 
 export const storages = ["poe1", "poe2"] as const;
 export type Storage = (typeof storages)[number];
@@ -15,7 +14,7 @@ export function guess_db(name?: string | null): Storage {
 }
 
 async function fetch_index(url: string, env: Env) {
-  const res = await env.INDEX.fetch(new Request(url));
+  const res = await env.INDEX!.fetch(new Request(url));
   console.log("fetch_index", url)
   if (!res.ok) {
       throw new Error(`Failed to fetch ${url}: ${res.status} ${await res.text()}`);
@@ -24,7 +23,7 @@ async function fetch_index(url: string, env: Env) {
 }
 
 export async function current_version(poe: string, env: Env) {
-  const res = await env.INDEX.fetch("http://index/version?poe=" + poe);
+  const res = await env.INDEX!.fetch("http://index/version?poe=" + poe);
   return res.text();
 }
 

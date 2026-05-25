@@ -1,7 +1,7 @@
 import {favicon} from "./favicon";
 import {show_file} from "./show-file";
 import {file_details, processIndexResponse} from "./utils";
-import {current_version, guess_db, is_db, ls, search_files, Storage, storages} from "./db";
+import {current_version, ls, search_files, storages} from "./db";
 
 export default {
 	async fetch(request, env, ctx) {
@@ -76,7 +76,7 @@ async function handleRequest(request: Request, env: Env, ctx: ExecutionContext):
 		const cacheKey = new Request(url.toString(), request);
 		let response = await cache.match(cacheKey);
 		if (!response) {
-			const res = await env.INDEX.fetch("http://index/check-version?poe=" + poe);
+			const res = await env.INDEX!.fetch("http://index/check-version?poe=" + poe);
 			const version = await res.text();
 			response = new Response(version, {
 				headers: {
