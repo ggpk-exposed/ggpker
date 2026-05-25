@@ -3,7 +3,7 @@ import { File } from "./index-response";
 
 const textDecoder = new TextDecoder("utf-16");
 
-export async function show_file(extractor: string, file: File, req: Request): Promise<Response> {
+export async function show_file(extractor: Fetcher, file: File, req: Request): Promise<Response> {
   if (!file.file_size) {
     console.warn("empty file requested, returning empty response", file);
     return new Response();
@@ -55,7 +55,7 @@ export async function show_file(extractor: string, file: File, req: Request): Pr
     } else if (i >= first_block) {
       const extracted = Math.min(BLOCK_SIZE, bundle_size - BLOCK_SIZE * i);
 
-      const url = new URL(extractor);
+      const url = new URL("http://extractor/");
       url.searchParams.set("url", cdn_url);
       url.searchParams.set("offset", String(offset));
       url.searchParams.set("compressed", String(compressed));
@@ -78,7 +78,7 @@ export async function show_file(extractor: string, file: File, req: Request): Pr
   }, [] as Block[][]);
 
   const responses = groups.map((blocks) => {
-    const url = new URL(extractor);
+    const url = new URL("http://extractor/");
     url.searchParams.set("url", cdn_url);
     url.searchParams.set("offset", blocks.map((b) => b.offset).join());
     url.searchParams.set("compressed", blocks.map((b) => b.compressed).join());
@@ -88,7 +88,7 @@ export async function show_file(extractor: string, file: File, req: Request): Pr
     const trim_end = end !== blocks[blocks.length - 1].extracted;
     end += (blocks.length - 1) * BLOCK_SIZE;
     const headers = !start && !trim_end ? undefined : { range: `bytes=${start}-${end - 1}` };
-    return unwrap(fetch(url, { headers, cf: { cacheEverything: true } }), start, end, url);
+    return unwrap(extractor.fetch(url.toString(), { headers, cf: { cacheEverything: true } }), start, end, url);
   });
 
   const result = new Uint8Array(file.file_size!);

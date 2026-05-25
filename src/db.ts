@@ -15,22 +15,16 @@ export function guess_db(name?: string | null): Storage {
 }
 
 async function fetch_index(url: string, env: Env) {
-  if (env.INDEX_SERVICE) {
-    const res = await env.INDEX_SERVICE.fetch(new Request(url));
-    if (!res.ok) {
-        throw new Error(`Failed to fetch index: ${res.status} ${await res.text()}`);
-    }
-    return res.json();
-  }
-  const res = await fetch(url);
+  const res = await env.INDEX.fetch(new Request(url));
+  console.log("fetch_index", url)
   if (!res.ok) {
-      throw new Error(`Failed to fetch index: ${res.status} ${await res.text()}`);
+      throw new Error(`Failed to fetch ${url}: ${res.status} ${await res.text()}`);
   }
   return res.json();
 }
 
 export async function current_version(adapter: Storage, env: Env) {
-  const data: any = await fetch_index(env.INDEX + "/files?q=ready", env);
+  const data: any = await fetch_index("http://index/files?q=ready", env);
   const storages = data.storages as string[];
   const search = adapter === "poe1" ? "patch.poecdn.com" : "patch-poe2.poecdn.com";
   return storages.find(s => s.includes(search))!;
@@ -38,19 +32,19 @@ export async function current_version(adapter: Storage, env: Env) {
 
 export async function ls(path: string, adapter: Storage, env: Env) {
   const version = await current_version(adapter, env);
-  const data: any = await fetch_index(env.INDEX + "/files?path=" + encodeURIComponent(path) + "&adapter=" + encodeURIComponent(version), env);
+  const data: any = await fetch_index("http://index/files?q=index&path=" + encodeURIComponent(path) + "&adapter=" + encodeURIComponent(version), env);
   return mapNodes(data.files, version);
 }
 
 export async function stat(path: string, adapter: Storage, env: Env) {
   const version = await current_version(adapter, env);
-  const data: any = await fetch_index(env.INDEX + "/files?q=details&path=" + encodeURIComponent(path) + "&adapter=" + encodeURIComponent(version), env);
+  const data: any = await fetch_index("http://index/files?q=details&path=" + encodeURIComponent(path) + "&adapter=" + encodeURIComponent(version), env);
   return mapNode(data.files[0], version);
 }
 
 export async function search_files(adapter: Storage, env: Env, filter: string, path: string) {
   const version = await current_version(adapter, env);
-  const url = env.INDEX + "/files?q=search&filter=" + encodeURIComponent(filter) + "&path=" + encodeURIComponent(path) + "&adapter=" + encodeURIComponent(version);
+  const url = "http://index/files?q=search&filter=" + encodeURIComponent(filter) + "&path=" + encodeURIComponent(path) + "&adapter=" + encodeURIComponent(version);
   const data: any = await fetch_index(url, env);
   return mapNodes(data.files, version);
 }

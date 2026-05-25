@@ -17,22 +17,15 @@ port = 8788
 enabled = true
 
 [vars]
-EXTRACTOR = "https://unoodler.lvlvlvllvlvlvl.workers.dev"
-IMAGES = "https://image.ggpk.exposed"
 BROWSER = "https://www.ggpk.exposed"
-INDEX = "https://ggpk-index-server.lvlvlvllvlvlvl.workers.dev"
 
-[env.local.vars]
-EXTRACTOR = "http://localhost:8787"
-IMAGES = "http://localhost:8789"
+[env.dev.vars]
 BROWSER = "http://localhost:5173"
-INDEX = "http://localhost:3000"
 
 [[services]]
-binding = "INDEX_SERVICE"
-service = "ggpk-index-server"
+binding = "EXTRACTOR"
+service = "unoodler"
 
-[[env.local.services]]
-binding = "INDEX_SERVICE"
+[[services]]
+binding = "INDEX"
 service = "ggpk-index-server"
-

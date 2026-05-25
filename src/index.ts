@@ -54,8 +54,7 @@ async function handleRequest(request: Request, env: Env, ctx: ExecutionContext):
     const cacheKey = new Request(url.toString(), request);
     let response = await cache.match(cacheKey);
     if (!response) {
-      const indexUrl = env.INDEX + "/check-version?poe=" + poe;
-      const res = await (env.INDEX_SERVICE ? env.INDEX_SERVICE.fetch(indexUrl) : fetch(indexUrl));
+      const res = await env.INDEX.fetch("http://index/check-version?poe=" + poe);
       const version = await res.text();
       response = new Response(version, {
         headers: {
