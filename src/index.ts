@@ -1,3 +1,4 @@
+import {favicon} from "./favicon";
 import {show_file} from "./show-file";
 import {file_details, processIndexResponse} from "./utils";
 import {current_version, guess_db, is_db, ls, search_files, Storage, storages} from "./db";
@@ -42,16 +43,13 @@ function normalizePath(path?: string | null) {
 async function handleRequest(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
 	const url = new URL(request.url);
 	const route = url.pathname.split("/")[1];
-	console.log(route, url.pathname)
 	if (route === "files") {
 		const operation = url.searchParams.get("q") || url.pathname.split("/")[2];
 		const [adapter, path] = normalizePath(url.searchParams.get("path"));
-		console.log("operation:", operation, 'param:', url.searchParams.get("path"), "path:", path, "adapter:", adapter);
 
 		if (operation === "preview" || operation === "download") {
 			// go to show_file below
 		} else if (operation === "search") {
-			console.log("searching for files with filter:", url.searchParams.get("filter"), "in path:", path);
 			const files = await search_files(adapter, env, url.searchParams.get("filter") || "", path);
 			return processIndexResponse({storages, adapter, files}, new URL(request.url), env);
 		} else {
@@ -77,6 +75,13 @@ async function handleRequest(request: Request, env: Env, ctx: ExecutionContext):
 			ctx.waitUntil(cache.put(cacheKey, response.clone()));
 		}
 		return response;
+	} else if (route === "favicon.ico") {
+		return new Response(favicon, {
+			headers: {
+				"Content-Type": "image/x-icon",
+				"Cache-Control": "public, max-age=31536000"
+			}
+		});
 	}
 
 	if (request.headers.has("if-modified-since")) {
