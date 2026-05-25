@@ -40,6 +40,17 @@ function normalizePath(path?: string | null) {
 	}
 }
 
+async function preview(filename: string, env: Env, request: Request) {
+	const [adapter, path] = normalizePath(filename);
+	let file = await file_details(env, path, adapter);
+	if (file) {
+		return show_file(env, file, request);
+	} else {
+		console.log("file not found", path);
+		return new Response(null, Response.redirect(env.BROWSER + "/" + filename));
+	}
+}
+
 async function handleRequest(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
 	const url = new URL(request.url);
 	const route = url.pathname.split("/")[1];
@@ -48,7 +59,7 @@ async function handleRequest(request: Request, env: Env, ctx: ExecutionContext):
 		const [adapter, path] = normalizePath(url.searchParams.get("path"));
 
 		if (operation === "preview" || operation === "download") {
-			// go to show_file below
+			return preview(url.searchParams.get("path")!, env, request)
 		} else if (operation === "search") {
 			const files = await search_files(adapter, env, url.searchParams.get("filter") || "", path);
 			return processIndexResponse({storages, adapter, files}, new URL(request.url), env);
@@ -89,14 +100,7 @@ async function handleRequest(request: Request, env: Env, ctx: ExecutionContext):
 		return new Response(null, {status: 304});
 	}
 
-	const [adapter, path] = normalizePath(url.pathname);
-	let file = await file_details(env, path, adapter);
-	if (file) {
-		return show_file(env, file, request);
-	} else {
-		console.log("file not found", path);
-		return new Response(null, Response.redirect(env.BROWSER + url.pathname));
-	}
+	return await preview(url.pathname, env, request);
 }
 
 /**

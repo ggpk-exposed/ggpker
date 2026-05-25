@@ -88,10 +88,9 @@ export function processIndexResponse(response: IndexResponse, url: URL, env: Env
       (f as any).previewUrl = new URL(`/${version}/${f.sprite.sheet}?format=png&${qs.stringify(crop(f.sprite))}`, env.IMAGES).toString();
     } else if (f.basename.endsWith(".dds")) {
       f.mime_type = "image/png";
-      (f as any).previewUrl = new URL(`/${version}/${f.path}?format=png&${qs.stringify(f)}`, env.IMAGES).toString();
-    } else if (!is_dir(f)) {
-      (f as any).url = new URL(`/${version}/${f.path}?${qs.stringify(f)}`, url).toString();
+      (f as any).previewUrl = new URL(`/${version}/${f.path}?format=png`, env.IMAGES).toString();
     }
+	f.path = `${f.storage}://${f.path}`
   }
   return Response.json(response, { headers: { "cache-control": "public, max-age=2409962" } });
 }
