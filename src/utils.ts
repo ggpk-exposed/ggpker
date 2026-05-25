@@ -70,7 +70,7 @@ export function crop({ x, y, w, h }: Sprite): any {
   return { x, y, w, h };
 }
 
-export async function file_details(env: Env, path: string, adapter: Storage): Promise<File | undefined> {
+export async function file_details(env: Env, path: string, adapter: string): Promise<File | undefined> {
   return await stat(path, adapter, env);
 }
 

@@ -22,19 +22,31 @@ export default {
 
 function normalizePath(path?: string | null) {
 	if (!path) return "";
-	return path.toLowerCase().replace(/^\/+/g, "").replace(/\/+$/g, "");
+	let adapter = "";
+	if (path.startsWith("poe1://") || path.startsWith("poe2://")) {
+		adapter = path.substring(0, 4);
+		path = path.substring(7);
+	}
+
+	let normalized = path.toLowerCase().replace(/^\/+/g, "").replace(/\/+$/g, "");
+
+	if (adapter) {
+		return [adapter, normalized]
+	} else if (normalized.startsWith("poe1/") || normalized.startsWith("poe2/")) {
+		return [normalized.substring(0, 4), normalized.substring(5)];
+	} else {
+		return ["poe1", normalized];
+	}
 }
 
 async function handleRequest(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
 	const url = new URL(request.url);
-	let path = url.pathname;
-	const route = path.split("/")[1];
-	let adapter: Storage;
+	const route = url.pathname.split("/")[1];
+	console.log(route, url.pathname)
 	if (route === "files") {
-		const operation = url.searchParams.get("q") || path.split("/")[2];
-		path = normalizePath(url.searchParams.get("path"));
-		adapter = guess_db(url.searchParams.get("adapter"));
-		console.log("operation:", operation, "path:", path);
+		const operation = url.searchParams.get("q") || url.pathname.split("/")[2];
+		const [adapter, path] = normalizePath(url.searchParams.get("path"));
+		console.log("operation:", operation, 'param:', url.searchParams.get("path"), "path:", path, "adapter:", adapter);
 
 		if (operation === "preview" || operation === "download") {
 			// go to show_file below
@@ -48,8 +60,7 @@ async function handleRequest(request: Request, env: Env, ctx: ExecutionContext):
 		}
 	} else if (route === "version" && !url.searchParams.has("live")) {
 		const poe = url.searchParams.get("poe");
-		const adapter = guess_db(poe === "1" ? "poe1" : "poe2");
-		return new Response(await current_version(adapter, env));
+		return new Response(await current_version(poe || "1", env));
 	} else if (route === "version") {
 		const poe = url.searchParams.get("poe");
 		const cache = caches.default;
@@ -66,12 +77,6 @@ async function handleRequest(request: Request, env: Env, ctx: ExecutionContext):
 			ctx.waitUntil(cache.put(cacheKey, response.clone()));
 		}
 		return response;
-	} else if (is_db(route)) {
-		adapter = route;
-		path = normalizePath(path.split(adapter + "/")[1] || "");
-	} else {
-		console.log("unrecognised route", route);
-		return new Response(null, Response.redirect(env.BROWSER));
 	}
 
 	if (request.headers.has("if-modified-since")) {
@@ -79,6 +84,7 @@ async function handleRequest(request: Request, env: Env, ctx: ExecutionContext):
 		return new Response(null, {status: 304});
 	}
 
+	const [adapter, path] = normalizePath(url.pathname);
 	let file = await file_details(env, path, adapter);
 	if (file) {
 		return show_file(env.EXTRACTOR, file, request);
