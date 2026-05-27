@@ -1,9 +1,9 @@
 import qs from "qs";
-import {File, IndexResponse, Sprite} from "./index-response";
-import {Mime} from "mime";
+import { File, IndexResponse, Sprite } from "./index-response";
+import { Mime } from "mime";
 import standardTypes from "mime/types/standard.js";
 import otherTypes from "mime/types/other.js";
-import {stat} from "./db";
+import { stat } from "./db";
 
 export const mime = new Mime(standardTypes, otherTypes);
 mime.define(
@@ -85,7 +85,8 @@ export function processIndexResponse(response: IndexResponse, url: URL, env: Env
       f.mime_type = "image/png";
       (f as any).previewUrl = new URL(`/${f.storage}/${f.path}?format=png`, env.IMAGES).toString();
     }
-	f.path = `${f.storage}://${f.path}`
+    f.path = `${f.storage}://${f.path}`;
+    f.dirname = `${f.storage}://${f.dirname}`;
   }
   return Response.json(response, { headers: { "cache-control": "public, max-age=2409962" } });
 }
