@@ -48,7 +48,7 @@ async function preview(filename: string, env: Env, request: Request) {
     return show_file(env, file, request);
   } else {
     console.log("file not found", path);
-    return new Response(null, Response.redirect(env.BROWSER + "/" + filename));
+    return new Response(null, Response.redirect(`${env.BROWSER}/${adapter}://${filename}`));
   }
 }
 

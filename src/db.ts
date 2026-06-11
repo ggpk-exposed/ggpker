@@ -34,7 +34,7 @@ export async function ls(path: string, adapter: string, env: Env) {
 
 export async function stat(path: string, adapter: string, env: Env) {
   const data: any = await fetch_index("http://index/files?q=details&path=" + encodeURIComponent(path) + "&adapter=" + encodeURIComponent(adapter), env);
-  return mapNode(data.files[0], adapter);
+  return mapNodes(data.files, adapter)[0];
 }
 
 export async function search_files(adapter: string, env: Env, filter: string, path: string, deep: string = "", size: string = "") {
